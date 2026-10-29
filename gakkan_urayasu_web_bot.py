@@ -1,14 +1,91 @@
 import streamlit as st
 
-# ページ設定
+# ページ基本設定
 st.set_page_config(
-    page_title="東京学館浦安高等学校 自動案内ボット",
+    page_title="東京学館浦安高等学校 入試広報AIアシスタント",
     page_icon="🏫",
     layout="centered"
 )
 
-st.title("🏫 東京学館浦安高等学校 自動案内ボット")
-st.caption("楽天市場風のカテゴリー選択ボタンで、知りたい情報を簡単に探せます。自由入力も可能です！")
+# 東京学館浦安高等学校 ブランドカラーCSS定義 (紺 #0B2545 / 金 #C5A059 / 白 #FFFFFF)
+st.markdown("""
+<style>
+    /* 全体背景とフォント */
+    .stApp {
+        background-color: #F8F9FA;
+    }
+    
+    /* ヘッダーカード */
+    .school-header {
+        background: linear-gradient(135deg, #0B2545 0%, #134074 100%);
+        color: #FFFFFF;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        text-align: center;
+        margin-bottom: 20px;
+        border-bottom: 4px solid #C5A059;
+    }
+    .school-header h1 {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 0 0 8px 0;
+        color: #FFFFFF;
+        letter-spacing: 1px;
+    }
+    .school-header .motto-badge {
+        display: inline-block;
+        background-color: #C5A059;
+        color: #0B2545;
+        font-size: 13px;
+        font-weight: bold;
+        padding: 4px 12px;
+        border-radius: 20px;
+        margin: 4px 6px;
+    }
+    .school-header p {
+        font-size: 14px;
+        color: #E0E1DD;
+        margin-top: 10px;
+        margin-bottom: 0;
+    }
+
+    /* サポート窓口カード */
+    .support-card {
+        background-color: #FFFFFF;
+        border: 2px solid #C5A059;
+        border-radius: 10px;
+        padding: 18px;
+        margin-top: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .support-card h4 {
+        color: #0B2545;
+        margin-top: 0;
+        font-size: 16px;
+        border-bottom: 2px solid #F0F2F5;
+        padding-bottom: 8px;
+    }
+
+    /* カテゴリーボタンのスタイル微調整 */
+    .stButton>button {
+        border-radius: 8px;
+        font-weight: 600;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# 学校ブランド・ヘッダー表示
+st.markdown("""
+<div class="school-header">
+    <h1>🏫 東京学館浦安高等学校</h1>
+    <div>
+        <span class="motto-badge">校訓：自主・自学</span>
+        <span class="motto-badge">スローガン：A better me（カコイチ更新）</span>
+    </div>
+    <p>入試広報部 AIナビゲーターへようこそ！受験・コース・学費など何でもご質問ください。</p>
+</div>
+""", unsafe_allow_html=True)
 
 # 知識データベース (Q&Aデータ)
 KNOWLEDGE_BASE = {
@@ -22,7 +99,7 @@ KNOWLEDGE_BASE = {
   ・1年次から実践的なカリキュラムを展開。
   ・成績優秀者で編成される「特進選抜クラス」を設置。
   ・7限目の特別講座や長期休業中の講習で高い学力を錬成します。
-■ 定員: 特別進学選抜30名 / 特別進学70名""",
+■ 定員: 特別進学選抜 30名 / 特別進学 70名""",
             "総合進学コース（＋選抜）": """【総合進学コース（＋選抜）】
 ■ 概要: 大学・短大・専門学校進学から就職まで、幅広い進路に対応するメインコースです。
 ■ 特徴:
@@ -148,19 +225,62 @@ KNOWLEDGE_BASE = {
 # セッション状態の初期化
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "こんにちは！東京学館浦安高等学校の自動応答ボットです。\n知りたい分野や項目を下の選択肢ボタンから選んでください。直接質問を入力することも可能です！"}
+        {"role": "assistant", "content": "こんにちは！東京学館浦安高等学校 入試広報ナビゲーターです。\n気になるカテゴリーを選択するか、キーワードを自由に入力しておたずねください！"}
     ]
 
 if "selected_category" not in st.session_state:
     st.session_state.selected_category = None
 
-# 過去のメッセージ表示
-for msg in st.session_state.messages:
+if "show_support" not in st.session_state:
+    st.session_state.show_support = False
+
+# メッセージ履歴表示
+for idx, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
+# 解決しなかった場合の個別サポート窓口（カード形式表示）
+def render_support_widget():
+    st.markdown("""
+    <div class="support-card">
+        <h4>🏫 入試広報部 相談・お問い合わせサポート</h4>
+        <p>AIボットで解決しなかった疑問や、個別の事情（内申点のご相談、帰国生入試、個別相談会のご予約など）については、入試広報部の担当者が直接丁寧にお答えいたします。</p>
+        <ul>
+            <li>📞 <b>お電話でのご相談</b>: <code>047-353-8821</code>（受付: 平日9:00〜16:30 / 土曜9:00〜13:00）</li>
+            <li>📧 <b>メールでのお問い合せ</b>: <a href="mailto:kouhou@gakkan-urayasu.ed.jp">kouhou@gakkan-urayasu.ed.jp</a></li>
+            <li>🏫 <b>学校説明会・個別相談会</b>: 実際の校舎見学や個別相談のご予約は公式HPより受付中</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.expander("📝 入試広報部へ直接質問・メッセージを送信する"):
+        with st.form(key="unresolved_form"):
+            user_name = st.text_input("お名前（任意）")
+            contact_info = st.text_input("ご連絡先（メールアドレスまたはお電話番号）")
+            question_detail = st.text_area("ご質問・ご相談内容", placeholder="例：特進コースの併願推薦基準について詳しく聞きたいです。")
+            submit_btn = st.form_submit_button("入試広報部へ送信する")
+            
+            if submit_btn:
+                if question_detail:
+                    st.success("✅ 送信が完了しました。入試広報部の担当者より追ってご連絡いたします。")
+                else:
+                    st.warning("⚠️ ご質問内容を入力してください。")
+
+if st.session_state.show_support:
+    render_support_widget()
+
 st.markdown("---")
-st.subheader("💡 項目から選んで質問する（選択肢ナビゲーション）")
+
+# 未解決サポートボタン
+col_supp1, col_supp2 = st.columns([2, 1])
+with col_supp1:
+    st.write("💡 **疑問が解決しない・個別に相談したい場合**")
+with col_supp2:
+    if st.button("❓ 担当者に直接相談する", type="secondary", use_container_width=True):
+        st.session_state.show_support = not st.session_state.show_support
+        st.rerun()
+
+st.markdown("### 💡 カテゴリーから探す（選択ナビゲーション）")
 
 # ステップ1: 大カテゴリー選択ボタン
 col1, col2 = st.columns(2)
@@ -173,6 +293,7 @@ for idx, cat_name in enumerate(categories):
     target_col = col1 if idx % 2 == 0 else col2
     if target_col.button(btn_label, use_container_width=True, key=f"cat_{idx}"):
         st.session_state.selected_category = cat_name
+        st.session_state.show_support = False
         st.rerun()
 
 # ステップ2: 選択された大カテゴリー内の小項目ボタンを表示
@@ -202,30 +323,31 @@ if st.session_state.selected_category:
 st.markdown("---")
 
 # 自由入力チャット
-if user_input := st.chat_input("自由なキーワードや質問を入力できます（例：学食の人気メニューは？）"):
+if user_input := st.chat_input("自由なキーワードや質問を入力できます（例：推薦基準の内申点は？）"):
     st.session_state.messages.append({"role": "user", "content": user_input})
     
     matched_answer = None
     for cat_name, cat_data in KNOWLEDGE_BASE.items():
         for sub_name, detail in cat_data["items"].items():
-            if "学食" in user_input and "学食" in sub_name:
+            if ("学食" in user_input or "食堂" in user_input or "ランチ" in user_input) and "学食" in sub_name:
                 matched_answer = detail
                 break
-            elif "コース" in user_input and "コース" in cat_name:
+            elif ("コース" in user_input or "特進" in user_input or "総進" in user_input or "国際" in user_input or "スポーツ" in user_input) and "コース" in cat_name:
                 matched_answer = detail
                 break
-            elif any(k in user_input for k in ["推薦", "内申", "基準", "入試"]) and "入試" in cat_name:
+            elif any(k in user_input for k in ["推薦", "内申", "基準", "出願", "入試", "併願", "単願"]) and "入試" in cat_name:
                 matched_answer = detail
                 break
-            elif any(k in user_input for k in ["学費", "費用", "授業料"]) and "学費" in cat_name:
+            elif any(k in user_input for k in ["学費", "費用", "授業料", "納入金", "就学支援金"]) and "学費" in cat_name:
                 matched_answer = detail
                 break
-            elif any(k in user_input for k in ["アクセス", "場所", "バス"]) and "アクセス" in cat_name:
+            elif any(k in user_input for k in ["アクセス", "場所", "バス", "駅", "住所", "電話"]) and "アクセス" in cat_name:
                 matched_answer = detail
                 break
 
     if not matched_answer:
-        matched_answer = f"「{user_input}」についてですね！上のボタンからカテゴリー（【コース・教育方針】【入試・出願・推薦基準】【学費・納入金】【学校生活】など）を選択いただくと、より詳しい情報をご確認いただけます。"
+        matched_answer = f"ご質問「{user_input}」に関する詳しい情報が見つかりませんでした。\n\n上のカテゴリーボタンから該当する項目をお探しいただくか、下の**「❓ 担当者に直接相談する」**ボタンより入試広報部へお電話・メール・お問い合わせフォームにて直接ご相談いただけます。"
+        st.session_state.show_support = True
 
     st.session_state.messages.append({"role": "assistant", "content": matched_answer})
     st.rerun()
