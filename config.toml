@@ -1,0 +1,11 @@
+# スマホをダークモードにしている場合でも、文字が読めなくなるのを防ぐため
+# 学校ブランドの配色（ライト）に固定します。
+[theme]
+base = "light"
+primaryColor = "#0B2545"
+backgroundColor = "#F8F9FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1F2933"
+
+[client]
+toolbarMode = "minimal"
